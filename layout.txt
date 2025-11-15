@@ -1,0 +1,24 @@
+-- Row 1 Peripheral --
+Addr: 0x10
+
+-- Row 2 Peripheral --
+Addr: 0x20
+
+Pos = Data
+Output:
+    Byte 0
+    Labubu N -> (1 for up, 0 for down)
+    0 = Labubu 1
+    1 = Labubu 2
+    2 = Labubu 3
+
+    Byte 1
+    0 = Homed
+    1 = Homing
+    2 = Resetting
+
+Byte 3 for each
+Input:
+    Byte 2
+    0 = Command home
+    1 = Command reset
