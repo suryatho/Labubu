@@ -2,7 +2,7 @@ from machine import Pin, ADC
 import utime
 from lib.easy_i2c_target import EasyI2CTarget
 from lib.task_scheduler import TaskScheduler
-from lib.task import *
+from lib.task import Task
 from lib.motor_controller import MotorController
 
 # I2C Bus Constants
