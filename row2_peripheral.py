@@ -7,24 +7,24 @@ from lib.motor_controller import MotorController
 from lib.task import Task
 from lib.task_scheduler import TaskScheduler
 
-# Row 1 specific configuration
-ADDRESS = 0x10
+# Row 2 specific configuration
+ADDRESS = 0x20
 
-# Row 1 specific LDR thresholds
-LABUBU_1_DOWN_THRESHOLD = 0.3
-LABUBU_2_DOWN_THRESHOLD = 0.3
-LABUBU_3_DOWN_THRESHOLD = 0.3
+# Row 2 specific LDR thresholds (different from row 1)
+LABUBU_1_DOWN_THRESHOLD = 0.4
+LABUBU_2_DOWN_THRESHOLD = 0.35
+LABUBU_3_DOWN_THRESHOLD = 0.25
 
-# Row 1 specific motor control values
-MOTOR_1_HOME_VAL = 0.5
-MOTOR_2_HOME_VAL = -0.5
-MOTOR_1_RESET_VAL = -0.5
-MOTOR_2_RESET_VAL = 0.5
+# Row 2 specific motor control values (different from row 1)
+MOTOR_1_HOME_VAL = 0.6
+MOTOR_2_HOME_VAL = -0.4
+MOTOR_1_RESET_VAL = -0.4
+MOTOR_2_RESET_VAL = 0.6
 
-# Row 1 specific timing values
-HOME_TIME = 2.0
-RESET_FORWARD_TIME = 2.0
-RESET_BACKWARD_TIME = 2.0
+# Row 2 specific timing values (different from row 1)
+HOME_TIME = 2.5
+RESET_FORWARD_TIME = 1.8
+RESET_BACKWARD_TIME = 2.2
 
 # Create I2C target with shared constants
 I2C_TARGET = EasyI2CTarget(

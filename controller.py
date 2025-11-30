@@ -1,3 +1,5 @@
+import sys
+
 import neopixel
 import utime
 from machine import I2C, Pin
@@ -20,8 +22,6 @@ ROW_ADDRESSES = [ROW_1_ADDR, ROW_2_ADDR]
 LCD_I2C_BUS = I2C(1, sda=Pin(2), scl=Pin(3), freq=400_000)
 LCD_I2C_ADDR = LCD_I2C_BUS.scan()[0]
 LCD = I2cLcd(LCD_I2C_BUS, LCD_I2C_ADDR, 2, 16)
-
-START = Pin(10, Pin.IN, Pin.PULL_UP)
 
 
 def read_row_ldr_state(row_addr):
@@ -49,6 +49,15 @@ RESET_CMD_BIT = 1
 LABUBU_COUNT = 3
 LABUBU_MASK = (1 << LABUBU_COUNT) - 1
 
+# Global flag for keyboard interrupt
+start_game_requested = False
+
+
+def keyboard_interrupt_handler():
+    """Handle Ctrl+C to start a new game"""
+    global start_game_requested
+    start_game_requested = True
+
 
 def write_cmd_bit(addr, bit_pos, value):
     # Read current command byte (mem 2), update the bit, write back
@@ -74,13 +83,22 @@ def lcd_show(time_left, score):
     LCD.putstr("Score: {:>3}".format(score))
 
 
+def lcd_show_waiting():
+    LCD.clear()
+    LCD.move_to(0, 0)
+    LCD.putstr("Press Ctrl+C")
+    LCD.move_to(0, 1)
+    LCD.putstr("to start game!")
+
+
 def all_labubus_down(ldr_byte):
     return (ldr_byte & LABUBU_MASK) == 0
 
 
 def main_loop():
+    global start_game_requested
+
     game_state = STATE_WAITING
-    last_start_state = 1  # PULL_UP btw
     game_start_time = 0
     game_end_time = 0
     score = 0
@@ -88,26 +106,24 @@ def main_loop():
     prev_ldr_bytes = [read_row_ldr_state(ROW_1_ADDR), read_row_ldr_state(ROW_2_ADDR)]
     row_resetting = [False, False]
 
+    # Show initial waiting message
+    lcd_show_waiting()
+
     while True:
         t0 = utime.ticks_ms() / 1e3
 
-        # Read inputs
-        start_pressed = START.value() == 0
+        # Read peripheral inputs
         ldr_bytes = [read_row_ldr_state(ROW_1_ADDR), read_row_ldr_state(ROW_2_ADDR)]
         motor_bytes = [
             read_row_motor_state(ROW_1_ADDR),
             read_row_motor_state(ROW_2_ADDR),
         ]
 
-        # Debounce/edge detect for start button: detect high->low transition
-        start_edge = False
-        if last_start_state == 1 and start_pressed:
-            start_edge = True
-        last_start_state = 0 if start_pressed else 1
-
         if game_state == STATE_WAITING:
-            # Wait for start button press
-            if start_edge:
+            # Check if start was requested via keyboard interrupt
+            if start_game_requested:
+                start_game_requested = False  # Reset the flag
+                print("Starting new game...")
                 # Begin homing sequence: set HOME command bit until homed
                 game_state = STATE_HOMING
                 for addr in ROW_ADDRESSES:
@@ -130,6 +146,7 @@ def main_loop():
                 prev_ldr_bytes = ldr_bytes[:]
                 row_resetting = [False, False]
                 game_state = STATE_PLAYING
+                print("Game started! Knock down the labubus!")
 
         elif game_state == STATE_PLAYING:
             elapsed = (utime.ticks_ms() / 1e3) - game_start_time
@@ -152,12 +169,14 @@ def main_loop():
                         cur_bit = (ldr_byte & (1 << i)) != 0
                         if prev_bit == 1 and cur_bit == 0:
                             score += 1
+                            print(f"Hit! Score: {score}")
                     prev_ldr_bytes[row_idx] = ldr_byte
 
                 # Check if all labubus are down in this row and start reset if needed
                 if all_labubus_down(ldr_byte) and not row_resetting[row_idx]:
                     write_cmd_bit(addr, RESET_CMD_BIT, 1)
                     row_resetting[row_idx] = True
+                    print(f"Resetting row {row_idx + 1}")
 
                 # Check if this row finished resetting
                 elif row_resetting[row_idx] and not resetting_flag:
@@ -165,14 +184,16 @@ def main_loop():
                     write_cmd_bit(addr, RESET_CMD_BIT, 0)
                     row_resetting[row_idx] = False
                     prev_ldr_bytes[row_idx] = read_row_ldr_state(addr)
+                    print(f"Row {row_idx + 1} reset complete")
 
             # End game when time is up
             if elapsed >= GAME_DURATION:
                 game_state = STATE_ENDING
                 game_end_time = utime.ticks_ms() / 1e3
+                print(f"Game over! Final score: {score}")
 
         elif game_state == STATE_ENDING:
-            # Display final score for 2 seconds, then go to waiting
+            # Display final score for 5 seconds, then go to waiting
             elapsed_end = (utime.ticks_ms() / 1e3) - game_end_time
             lcd_show(5.0 - elapsed_end, score)
 
@@ -183,6 +204,8 @@ def main_loop():
                     write_cmd_bit(addr, RESET_CMD_BIT, 0)
                 row_resetting = [False, False]
                 game_state = STATE_WAITING
+                lcd_show_waiting()
+                print("Press Ctrl+C to start a new game!")
 
         # small loop pacing
         t1 = utime.ticks_ms() / 1e3
@@ -191,5 +214,21 @@ def main_loop():
             utime.sleep(LOOP_S - elapsed)
 
 
+def main():
+    """Main function with keyboard interrupt handling"""
+    global start_game_requested
+
+    try:
+        main_loop()
+    except KeyboardInterrupt:
+        # Handle Ctrl+C
+        keyboard_interrupt_handler()
+        print("Game start requested! Continuing...")
+        # Resume the main loop
+        main()
+
+
 if __name__ == "__main__":
-    main_loop()
+    print("Labubu Game Controller")
+    print("Press Ctrl+C to start a new game")
+    main()
