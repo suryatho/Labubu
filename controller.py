@@ -42,7 +42,7 @@ LOOP_S = 0.1
 STATE_WAITING = 0
 STATE_HOMING = 1
 STATE_PLAYING = 2
-STATE_RESETTING = 3
+STATE_ENDING = 3
 
 HOME_CMD_BIT = 0
 RESET_CMD_BIT = 1
@@ -53,7 +53,7 @@ LABUBU_MASK = (1 << LABUBU_COUNT) - 1
 def write_cmd_bit(addr, bit_pos, value):
     # Read current command byte (mem 2), update the bit, write back
     try:
-        cur = I2C_BUS.readfrom_mem(addr, 2, 1)
+        cur = I2C_BUS.readfrom_mem(addr, 2, 1)[0]
     except Exception:
         cur = 0
     if value:
@@ -82,6 +82,7 @@ def main_loop():
     game_state = STATE_WAITING
     last_start_state = 1  # PULL_UP btw
     game_start_time = 0
+    game_end_time = 0
     score = 0
     # Keep previous LDR per-labubu bits to detect 1 -> 0 transitions
     prev_ldr_bytes = [read_row_ldr_state(ROW_1_ADDR), read_row_ldr_state(ROW_2_ADDR)]
@@ -159,23 +160,29 @@ def main_loop():
                     row_resetting[row_idx] = True
 
                 # Check if this row finished resetting
-                if row_resetting[row_idx] and not resetting_flag:
+                elif row_resetting[row_idx] and not resetting_flag:
                     # Reset completed for this row
                     write_cmd_bit(addr, RESET_CMD_BIT, 0)
                     row_resetting[row_idx] = False
                     prev_ldr_bytes[row_idx] = read_row_ldr_state(addr)
 
-                # End game when time is up
-                if elapsed >= GAME_DURATION:
-                    game_state = STATE_WAITING
-                    # Ensure commands cleared for both rows
-                    for addr in ROW_ADDRESSES:
-                        write_cmd_bit(addr, HOME_CMD_BIT, 0)
-                        write_cmd_bit(addr, RESET_CMD_BIT, 0)
-                    row_resetting = [False, False]
-                    # Display final score for a short time
-                    lcd_show(0, score)
-                    utime.sleep(2.0)
+            # End game when time is up
+            if elapsed >= GAME_DURATION:
+                game_state = STATE_ENDING
+                game_end_time = utime.ticks_ms() / 1e3
+
+        elif game_state == STATE_ENDING:
+            # Display final score for 2 seconds, then go to waiting
+            elapsed_end = (utime.ticks_ms() / 1e3) - game_end_time
+            lcd_show(5.0 - elapsed_end, score)
+
+            if elapsed_end >= 5.0:
+                # Now clear all commands and reset state
+                for addr in ROW_ADDRESSES:
+                    write_cmd_bit(addr, HOME_CMD_BIT, 0)
+                    write_cmd_bit(addr, RESET_CMD_BIT, 0)
+                row_resetting = [False, False]
+                game_state = STATE_WAITING
 
         # small loop pacing
         t1 = utime.ticks_ms() / 1e3

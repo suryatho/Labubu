@@ -155,7 +155,7 @@ while True:
     time_start = utime.ticks_ms() / 1e3
     scheduler.run(time_start)
 
-    # Send output state
+    # Send output state (1 for down, 0 for up)
     I2C_TARGET.write_bit(0, LABUBU_1, read_labubu_down(LDR_1, LABUBU_1_DOWN_THRESHOLD))
     I2C_TARGET.write_bit(0, LABUBU_2, read_labubu_down(LDR_2, LABUBU_2_DOWN_THRESHOLD))
     I2C_TARGET.write_bit(0, LABUBU_3, read_labubu_down(LDR_3, LABUBU_3_DOWN_THRESHOLD))
