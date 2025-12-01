@@ -1,15 +1,12 @@
-import sys
-
-import neopixel
 import utime
 from machine import I2C, Pin
 
 from lib.pico_i2c_lcd import I2cLcd
 
 # I2C Bus Constants
-I2C_SCL = Pin(5)
-I2C_SDA = Pin(4)
-I2C_BUS = I2C(0, sda=I2C_SDA, scl=I2C_SCL, freq=400_000)
+I2C_SCL = Pin(3)
+I2C_SDA = Pin(2)
+I2C_BUS = I2C(1, sda=I2C_SDA, scl=I2C_SCL, freq=400_000)
 
 ROW_1_ADDR = 0x10
 ROW_2_ADDR = 0x20
@@ -19,7 +16,7 @@ if ROW_2_ADDR not in I2C_BUS.scan():
     raise Exception("Row 2 peripheral not found on I2C bus!")
 ROW_ADDRESSES = [ROW_1_ADDR, ROW_2_ADDR]
 
-LCD_I2C_BUS = I2C(1, sda=Pin(2), scl=Pin(3), freq=400_000)
+LCD_I2C_BUS = I2C(1, sda=Pin(0), scl=Pin(1), freq=400_000)
 LCD_I2C_ADDR = LCD_I2C_BUS.scan()[0]
 LCD = I2cLcd(LCD_I2C_BUS, LCD_I2C_ADDR, 2, 16)
 

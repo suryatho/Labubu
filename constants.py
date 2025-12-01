@@ -13,9 +13,9 @@ HOME_CMD = 0
 RESET_CMD = 1
 
 # I2C Bus Pin Configuration (same for all peripherals)
-BUS_SCL = Pin(5)
-BUS_SDA = Pin(4)
-I2C_BUS_ID = 0
+BUS_SCL = Pin(3)
+BUS_SDA = Pin(2)
+I2C_BUS_ID = 1
 I2C_MEM_SIZE = 3
 
 # Hardware Pin Assignments (same for all peripherals)
