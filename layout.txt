@@ -13,12 +13,10 @@ Output:
     2 = Labubu 3
 
     Byte 1
-    0 = Homed
-    1 = Homing
-    2 = Resetting
+    0 = Reset (labubu up and stick down)
+    1 = Resetting
 
 Byte 3 for each
-Input:
+Input: (1 for command, 0 for nothing)
     Byte 2
-    0 = Command home
-    1 = Command reset
+    0 = Command reset

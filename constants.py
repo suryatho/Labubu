@@ -5,12 +5,10 @@ LABUBU_1 = 0
 LABUBU_2 = 1
 LABUBU_3 = 2
 
-HOMED = 0
-HOMING = 1
-RESETTING = 2
+RESET = 0
+RESETTING = 1
 
-HOME_CMD = 0
-RESET_CMD = 1
+RESET_CMD = 0
 
 # I2C Bus Pin Configuration (same for all peripherals)
 BUS_SCL = Pin(3)
